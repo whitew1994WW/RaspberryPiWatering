@@ -1,3 +1,7 @@
+Currently, this project connects to a temperature and humidity sensor on a raspberry pi. It collects data at reguar 
+intervals and saves this data in daily files in an s3 bucket. Next I would like to set up a water pump to make my 
+plant wet when it gets thirsty
+
 ****Requirements****
 1. AHT20 sensor
 2. Raspberry Pi with Raspbian installed
