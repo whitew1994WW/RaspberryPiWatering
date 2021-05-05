@@ -44,7 +44,7 @@ class PulseSensorReader:
 
     def get_frequency(self):
         if self._period is not None:
-            return 1000000.0 / self._period
+            return 1.0 / (self._period)
         else:
             return 0.0
 
