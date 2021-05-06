@@ -6,7 +6,7 @@ from sensors.AHT20Temperature import AHT20Temperature
 from sensors.AHT20Humidity import AHT20Humidity
 from sensors.GrowMoistureSensor import GrowMoistureSensor
 
-from rain_simulator import RainSimulator
+from RainSimulator import RainSimulator
 import credentials
 
 
@@ -20,7 +20,7 @@ class CollectData:
     frequency = {'seconds': 10}
     bucket = 's3://example-bucket-whitew1994'
     water_sat_thresh = 20  # Water saturation level at which watering the plant starts
-    pump_output_pin = 11  # 17
+    pump_output_pin = 11
 
     # Rain options
     rain_time = 60  # minutes
@@ -56,9 +56,11 @@ class CollectData:
 
     def collect_data(self):
         current_datetime = pd.Timestamp.now()
+        rain_rate = self.rain_sim.will_it_rain(self.df.loc[current_datetime, "Soil Saturation"])
+        self.df.loc[current_datetime, 'rain_rate'] = rain_rate
+        self.df.loc[current_datetime, 'rain_total_volume'] = self.rain_amount
         for sensor_name in self.sensors.keys():
             self.df.loc[current_datetime, sensor_name] = self.sensors[sensor_name].get_reading()
-        self.rain_sim.will_it_rain(self.df.loc[current_datetime, "Soil Saturation"])
 
     def save_current_data(self):
         previous_day = pd.Timestamp.now() - pd.Timedelta(1, unit='day')

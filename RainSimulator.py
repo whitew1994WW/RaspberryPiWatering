@@ -1,5 +1,5 @@
 import time
-
+import logging
 import numpy as np
 import json
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -28,18 +28,24 @@ class RainSimulator:
     is_raining = False
     time_since_last_rain = datetime.now() - timedelta(days=minimum_days_between_rain)
 
-    def __init__(self, trigger_saturation:int, output_pin:int, time_to_rain:float, volume_to_rain:float, calibrate=True):
+    def __init__(self, trigger_saturation: int, output_pin: int, time_to_rain: float,
+                 volume_to_rain: float, calibrate=True):
+        logging.debug("Setting up Class")
         self.sched = BackgroundScheduler()
         self.trigger_saturation = trigger_saturation
         self.output_pin = output_pin
         self.time_to_rain = time_to_rain
         self.volume_to_rain = volume_to_rain
         self.rain_rate = volume_to_rain / time_to_rain
+        logging.info("Calculated rain rate is {}".format(self.rain_rate))
         self.NO_SHOWERS = self.time_to_rain / self.TIME_BETWEEN_SHOWERS
+        logging.info("Calculated NO_SHOWERS is {}".format(self.NO_SHOWERS))
         self.VOLUME_PER_SHOWER = volume_to_rain / self.NO_SHOWERS
+        logging.info("VOLUME_PER_SHOWER is {}".format(self.VOLUME_PER_SHOWER))
 
+        logging.debug("Setting up the pinout")
         # Set up the output pin (that turns on the pump
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.output_pin, GPIO.OUT)
 
         # If calibration is activated then perform the calibration and save the values locally
@@ -51,16 +57,20 @@ class RainSimulator:
     def will_it_rain(self, saturation):
         """
         Checks if it should rain based on the saturation given and how recently it last rained.
-        :return: Volume of water outputted by the pump
+        :return: Rain rate currently
         """
+        logging.debug("Running will_it_rain with {} input".format(saturation))
         days_since_last_rain = (datetime.now() - self.time_since_last_rain).days
         if (saturation < self.trigger_saturation) & \
             (self.is_raining is False) & \
             (days_since_last_rain >= self.minimum_days_between_rain):
             self.start_rain()
-            return self.volume_to_rain
+            return self.rain_rate
+        elif self.is_raining:
+            return self.rain_rate
         else:
             return 0
+
 
     def shower(self):
         """
@@ -68,6 +78,7 @@ class RainSimulator:
         """
         # If the number of showers completed in this 'rain' are equal to the maximum number of showers then stop the
         # 'rain' and reset the counter.
+        logging.debug("Running shower()")
         if self.shower_count == self.NO_SHOWERS:
             self.stop_rain()
             self.shower_count = 0
@@ -78,6 +89,7 @@ class RainSimulator:
         """
         Pumps a fixed volume of water set in the VOLUME_PER_SHOWER or in the optional argument
         """
+        logging.debug("Running pump_water() with {} volume".format(volume))
         if volume == 0:
             volume = self.VOLUME_PER_SHOWER
 
@@ -89,19 +101,23 @@ class RainSimulator:
         Turns on the pump for a fixed number of seconds
         :param time_active: In seconds the time the pump should be active for
         """
-        GPIO.output(self.output_pin, 1)
+        logging.debug("Running turn_on_pump() with {} at pump {}".format(time_active, self.output_pin))
+        GPIO.output(self.output_pin, GPIO.HIGH)
         time.sleep(time_active)
-        GPIO.output(self.output_pin, 0)
+        GPIO.output(self.output_pin, GPIO.LOW)
 
     def start_rain(self):
+        logging.debug("Starting 'rain'")
         self.time_since_last_rain = datetime.today()
         self.sched.start()
         self.sched.add_job(self.shower, 'interval', minutes=self.TIME_BETWEEN_SHOWERS)
 
     def stop_rain(self):
+        logging.debug("Stopping 'rain'")
         self.sched.shutdown()
 
     def calibrate(self):
+        logging.debug('Calibrating the pump')
         calibrate_time = 30  # Seconds
         _ = input("Please fill up the tank with water and put the output nozzle into a measuring jug for calibration. "
                   "Press enter when ready.")
@@ -134,6 +150,7 @@ class RainSimulator:
         Solves AX = B
         :return: X
         """
+        logging.debug(f"solving linear equation with A={A} and B={B}")
         A = np.array(A)
         B = np.array(B)
         X = np.linalg.inv(A).dot(B)
@@ -146,12 +163,16 @@ class RainSimulator:
         :param volume: amount of water to calculate the water output for
         :return: pump_time, the time in seconds that the pump needs to be active to pump out 'volume' in ml of water
         """
-        return (self.calibration_settings['warm_up_vol'] + volume) / self.calibration_settings['pump_rate']
+        pump_time = (self.calibration_settings['warm_up_vol'] + volume) / self.calibration_settings['pump_rate']
+        logging.debug(f"Converting volume {volume} to pump_time {pump_time}")
+        return pump_time
 
     def save_calibration_settings(self):
+        logging.debug(f"Saving calibration_settings {self.calibration_settings}")
         with open('calibration_settings.json', 'w') as f:
             json.dump(self.calibration_settings, f)
 
     def load_calibration_settings(self):
+        logging.debug(f"loading calibration settings {self.calibration_settings}")
         with open('calibration_settings.json', 'r') as f:
             self.calibration_settings = json.load(f)

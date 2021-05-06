@@ -48,6 +48,11 @@ eval "$(pyenv virtualenv-init -)"
 1. Create a credentials.py file where AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID are set as enviroment variables in os.environ 
    2. Set the output bucket and frequency of data collection in the collect_data script
    3. Run collect_data.py to start collecting data
+    
+****Set up Pump**** 
+1. I have solidered the two leads coming out of the pump onto plug in connecotrs for the RP
+2. I have connected the negative lead to the ground and the positive lead to a GPIO
+
 
 
 
