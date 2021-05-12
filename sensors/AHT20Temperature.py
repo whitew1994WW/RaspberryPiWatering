@@ -5,7 +5,7 @@ import python_sensor_aht20.AHT20 as AHT20
 class AHT20Temperature(AbstractSensor):
     sensor_name = "AHT20"
     sensor_type = "Temperature"
-    data_unit = "T"
+    data_unit = "C"
 
     def __init__(self):
         # Initialize an AHT20

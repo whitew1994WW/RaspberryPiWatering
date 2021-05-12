@@ -19,3 +19,6 @@ async-timeout==3.0.1
 multidict==5.1.0
 RPi.GPIO==0.7.0
 schedule==1.1.0
+bh1745==0.0.4
+i2cdevice>=0.0.6
+smbus==1.1

@@ -10,6 +10,9 @@ class AbstractSensor(metaclass=abc.ABCMeta):
     def get_reading(self):
         pass
 
+    def check_sensor(self):
+        return True
+
     def get_unit(self):
         return self.data_unit
 
