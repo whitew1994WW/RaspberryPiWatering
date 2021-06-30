@@ -1,7 +1,6 @@
 import unittest
 import logging
 from sensors.AHT20Temperature import AHT20Temperature
-logging.getLogger().setLevel(logging.DEBUG)
 
 
 class TestAHT20Temperature(unittest.TestCase):

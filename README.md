@@ -50,8 +50,7 @@ eval "$(pyenv virtualenv-init -)"
    3. Run collect_data.py to start collecting data
     
 ****Set up Pump**** 
-1. I have solidered the two leads coming out of the pump onto plug in connecotrs for the RP
-2. I have connected the negative lead to the ground and the positive lead to a GPIO
+1. 
 
 
 

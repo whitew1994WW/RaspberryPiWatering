@@ -1,7 +1,6 @@
 import unittest
 import logging
 from sensors.AHT20Humidity import AHT20Humidity
-logging.getLogger().setLevel(logging.DEBUG)
 
 
 class TestAHT20Humidity(unittest.TestCase):

@@ -1,12 +1,12 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 import pandas as pd
 import os
+import logging
 
 from sensors.AHT20Temperature import AHT20Temperature
 from sensors.AHT20Humidity import AHT20Humidity
 from sensors.GrowMoistureSensor import GrowMoistureSensor
 
-from RainSimulator import RainSimulator
 import credentials
 
 
@@ -15,10 +15,10 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 
-class CollectData:
+class DataCollector:
     # Variables
     frequency = {'seconds': 10}
-    bucket = 's3://example-bucket-whitew1994'
+    bucket = ''
     water_sat_thresh = 20  # Water saturation level at which watering the plant starts
     pump_output_pin = 11
 
@@ -31,32 +31,26 @@ class CollectData:
     water_when_low = True
 
     # Sensors for collecting data
+    soil_moisture_sensor_pin = 18
     sensors = {
         "Temperature": AHT20Temperature(),
         "Humidity": AHT20Humidity(),
-        "Soil Saturation": GrowMoistureSensor(18)
+        "Soil Saturation": GrowMoistureSensor(soil_moisture_sensor_pin)
     }
 
-    def __init__(self):
+    def __init__(self, bucket='s3://example-bucket-whitew1994'):
+        logging.debug("Setting up DataCollector class")
         self.sched = BackgroundScheduler()
+        self.bucket = bucket
         # Start the data collection at a regular interval
         self.df = self.create_empty_dataframe()
-        self.start_data_collection()
-        self.rain_sim = RainSimulator(trigger_saturation=self.water_sat_thresh, output_pin=self.pump_output_pin,
-                                      time_to_rain=self.rain_time, volume_to_rain=self.rain_amount, calibrate=True)
+
         # Start saving the data every day to S3
         self.sched.add_job(self.save_current_data, 'cron', hour='0')
 
-    def start_data_collection(self):
-        self.sched.start()
-        self.sched.add_job(self.collect_data, 'interval', **self.frequency)
-
-    def stop_data_collection(self):
-        self.sched.shutdown()
-
-    def collect_data(self):
+    def collect_data(self, rain_rate):
         current_datetime = pd.Timestamp.now()
-        rain_rate = self.rain_sim.will_it_rain(self.df.loc[current_datetime, "Soil Saturation"])
+        logging.debug("Collecting Data at {}".format(current_datetime))
         self.df.loc[current_datetime, 'rain_rate'] = rain_rate
         self.df.loc[current_datetime, 'rain_total_volume'] = self.rain_amount
         for sensor_name in self.sensors.keys():
@@ -64,10 +58,11 @@ class CollectData:
 
     def save_current_data(self):
         previous_day = pd.Timestamp.now() - pd.Timedelta(1, unit='day')
+        logging.debug("Saving data for day {}".format(previous_day))
         bucket_file_name = self.bucket + '/year=' + str(previous_day.year) + '/month=' + str(previous_day.month) + '/' + \
                            str(previous_day.day) + '.csv'
         self.df.to_csv(bucket_file_name,
-                  index=True,
+                  index=False,
                   storage_options={
                     "key": AWS_ACCESS_KEY_ID,
                     "secret": AWS_SECRET_ACCESS_KEY
@@ -82,7 +77,7 @@ class CollectData:
 
 
 if __name__ == '__main__':
-    CollectData()
+    DataCollector()
 
 
 

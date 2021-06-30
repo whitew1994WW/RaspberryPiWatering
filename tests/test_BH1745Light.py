@@ -1,7 +1,6 @@
 import unittest
 import logging
 from sensors.BH1745Light import BH1745Light
-logging.getLogger().setLevel(logging.DEBUG)
 
 
 class TestBH1745(unittest.TestCase):

@@ -3,6 +3,7 @@ import logging
 import numpy as np
 import json
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers import SchedulerNotRunningError
 from datetime import datetime, timedelta
 import RPi.GPIO as GPIO
 
@@ -49,6 +50,7 @@ class RainSimulator:
         GPIO.setup(self.output_pin, GPIO.OUT)
 
         # If calibration is activated then perform the calibration and save the values locally
+
         if calibrate:
             self.calibrate()
         else:
@@ -79,9 +81,12 @@ class RainSimulator:
         # If the number of showers completed in this 'rain' are equal to the maximum number of showers then stop the
         # 'rain' and reset the counter.
         logging.debug("Running shower()")
+        logging.debug("Shower count is {}. NO_SHOWERS is {}".format(self.shower_count, self.NO_SHOWERS))
         if self.shower_count == self.NO_SHOWERS:
+
             self.stop_rain()
             self.shower_count = 0
+            return None
         self.pump_water()
         self.shower_count += 1
 
@@ -114,47 +119,35 @@ class RainSimulator:
 
     def stop_rain(self):
         logging.debug("Stopping 'rain'")
-        self.sched.shutdown()
+        GPIO.output(self.output_pin, GPIO.LOW)
+        try:
+            self.sched.shutdown()
+        except SchedulerNotRunningError:
+            logging.debug("Scheduler already stopped")
 
     def calibrate(self):
         logging.debug('Calibrating the pump')
-        calibrate_time = 30  # Seconds
+        calibrate_time = 5
+        calibrate_times = [calibrate_time, calibrate_time*2]
+        total_vols = []
         _ = input("Please fill up the tank with water and put the output nozzle into a measuring jug for calibration. "
                   "Press enter when ready.")
-        self.turn_on_pump(30)
+        self.turn_on_pump(calibrate_time)
         _ = input("Please empty the water and press enter")
-        self.turn_on_pump(30)
-        total_volume_30 = input("Please enter the total volume of water outputted in ml:")
-        _ = input("Please empty the water and press enter")
-        calibrate_time = 60
-        self.turn_on_pump(60)
-        total_volume_60 = input("Please enter the total volume of water outputted in ml:")
-        _ = input("Please empty the water and press enter")
+        for calibrate_time in calibrate_times:
+            self.turn_on_pump(calibrate_time)
+            total_vol = input("Please enter the total volume of water outputted in ml:")
+            total_vols.append(float(total_vol))
 
-        # Regression between time pump is active and the amount of water produced to estimate the warm up volume of the
-        # pump - total_vol = rate*time - warm_up_vol (y = mx + c). This is solved with matricies
-        # matricies AX = B where A = [[time_1, 1], [time_2, 1]] X = [rate, -warm_up_vol] and B = [[total_vol1],
-        # [total_vol_2]]
+        self.regression(total_vols, calibrate_times)
 
-        A = [[30, 1], [60, 1]]
-        B = [[total_volume_30],[total_volume_60]]
-        X = self.solve_linear_equation(A, B)
+    def regression(self, total_vols, calibrate_times):
+        #Not to overcomplicate things - estimate that the warm up volume and the rate - basic two point regression:
+        diff = total_vols[1] - total_vols[0]
 
-        self.calibration_settings['warm_up_vol'] = X[1][0]
-        self.calibration_settings['pump_rate'] = X[0][0]
+        self.calibration_settings['warm_up_vol'] = diff - total_vols[0]
+        self.calibration_settings['pump_rate'] = diff / calibrate_times[0]
         self.save_calibration_settings()
-
-    @staticmethod
-    def solve_linear_equation(A, B):
-        """
-        Solves AX = B
-        :return: X
-        """
-        logging.debug(f"solving linear equation with A={A} and B={B}")
-        A = np.array(A)
-        B = np.array(B)
-        X = np.linalg.inv(A).dot(B)
-        return X
 
     def water_vol_to_pump_time(self, volume):
         """
