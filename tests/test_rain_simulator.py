@@ -1,8 +1,9 @@
 from unittest import TestCase
+import unittest
 from RainSimulator import RainSimulator
 import logging
 import RPi.GPIO as GPIO
-
+from DataCollector import DataCollector
 logging.getLogger().setLevel(logging.DEBUG)
 
 
@@ -10,8 +11,7 @@ class TestRainSimulator(TestCase):
     output_pin = 16
     # Ran before each test
     def setUp(self) -> None:
-        self.rain_sim = RainSimulator(trigger_saturation=0, output_pin=self.output_pin, time_to_rain=10,
-                                      volume_to_rain=100, calibrate=False)
+        self.rain_sim = RainSimulator(DataCollector(save_data=False), calibrate=False)
 
     def tearDown(self) -> None:
         self.rain_sim.stop_rain()
@@ -21,21 +21,15 @@ class TestRainSimulator(TestCase):
     def test_will_it_rain(self):
         self.rain_sim.is_raining = False
         self.rain_sim.minimum_days_between_rain = 0
-        rain_rate = self.rain_sim.will_it_rain(-1)
+        rain_rate = self.rain_sim.will_it_rain()
         self.rain_sim.stop_rain()
         state = GPIO.input(self.output_pin)
         self.assertIs(0, state)
 
         self.rain_sim.is_raining = True
-        rain_rate = self.rain_sim.will_it_rain(-1)
+        rain_rate = self.rain_sim.will_it_rain()
         state = GPIO.input(self.output_pin)
         self.assertIs(0, state)
-
-        self.rain_sim.is_raining = False
-        rain_rate = self.rain_sim.will_it_rain(0)
-        state = GPIO.input(self.output_pin)
-        self.assertIs(0, state)
-        self.assertIs(0, rain_rate)
 
 
     def test_shower(self):
@@ -57,6 +51,8 @@ class TestRainSimulator(TestCase):
     def test_start_rain(self):
         self.rain_sim.start_rain()
         jobs = self.rain_sim.sched.get_jobs()
-        self.assertEqual(len(jobs), 1)
+        self.assertEqual(len(jobs), 2)
         self.rain_sim.stop_rain()
 
+if __name__ == '__main__':
+    unittest.main()

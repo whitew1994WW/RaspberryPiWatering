@@ -27,12 +27,12 @@ class TestCollectData(unittest.TestCase):
 
     def test_collect_data(self):
         rain_rate = random.randint(1, 100)
-        self.data_collector.collect_data(rain_rate)
+        self.data_collector.collect_data(rain_rate, 100)
         last_added = self.data_collector.df.iloc[-1:]
         print(last_added['rain_rate'].iloc[0])
         self.assertEqual(last_added['rain_rate'].iloc[0], rain_rate)
-        self.assertIn('rain_total_volume', list(last_added.columns))
-        self.assertIsNotNone(last_added['rain_total_volume'].iloc[0])
+        self.assertIn('shower_volume', list(last_added.columns))
+        self.assertIsNotNone(last_added['shower_volume'].iloc[0])
 
     def test_save_current_data(self):
         test_data = {'test_column': [1, 2, 3], 'test_column2': [1, 2, 3]}

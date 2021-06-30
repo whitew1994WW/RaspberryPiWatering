@@ -6,7 +6,7 @@ import logging
 from sensors.AHT20Temperature import AHT20Temperature
 from sensors.AHT20Humidity import AHT20Humidity
 from sensors.GrowMoistureSensor import GrowMoistureSensor
-
+from settings import settings
 import credentials
 
 
@@ -16,43 +16,29 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 
 class DataCollector:
-    # Variables
-    frequency = {'seconds': 10}
-    bucket = ''
-    water_sat_thresh = 20  # Water saturation level at which watering the plant starts
-    pump_output_pin = 11
-
-    # Rain options
-    rain_time = 60  # minutes
-    rain_amount = 200  # ml
-
-    # Script options
-    save_data_to_s3 = True
-    water_when_low = True
-
-    # Sensors for collecting data
-    soil_moisture_sensor_pin = 18
     sensors = {
         "Temperature": AHT20Temperature(),
         "Humidity": AHT20Humidity(),
-        "Soil Saturation": GrowMoistureSensor(soil_moisture_sensor_pin)
+        "Soil Saturation": GrowMoistureSensor(settings['soil_moisture_sensor_pin'])
     }
+    save_data = True
 
-    def __init__(self, bucket='s3://example-bucket-whitew1994'):
+    def __init__(self, save_data=True, bucket='s3://example-bucket-whitew1994'):
         logging.debug("Setting up DataCollector class")
         self.sched = BackgroundScheduler()
         self.bucket = bucket
+        self.save_data = save_data
         # Start the data collection at a regular interval
         self.df = self.create_empty_dataframe()
 
         # Start saving the data every day to S3
         self.sched.add_job(self.save_current_data, 'cron', hour='0')
 
-    def collect_data(self, rain_rate):
+    def collect_data(self, rain_rate, shower_volume):
         current_datetime = pd.Timestamp.now()
         logging.debug("Collecting Data at {}".format(current_datetime))
         self.df.loc[current_datetime, 'rain_rate'] = rain_rate
-        self.df.loc[current_datetime, 'rain_total_volume'] = self.rain_amount
+        self.df.loc[current_datetime, 'shower_volume'] = shower_volume
         for sensor_name in self.sensors.keys():
             self.df.loc[current_datetime, sensor_name] = self.sensors[sensor_name].get_reading()
 

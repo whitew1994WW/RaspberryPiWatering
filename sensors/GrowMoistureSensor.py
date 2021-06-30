@@ -37,9 +37,3 @@ class GrowMoistureSensor(AbstractSensor):
         relative_frequency = frequency - self.min_frequency
         percent_saturation = 100 * ((frequency_range - relative_frequency) / frequency_range)
         return percent_saturation
-
-
-def test_sensor():
-    sensor = GrowMoistureSensor(18)
-    while True:
-        print(sensor.get_reading())
