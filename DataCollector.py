@@ -1,13 +1,13 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 import pandas as pd
-import os
 import logging
+import boto3
 
 from sensors.AHT20Temperature import AHT20Temperature
 from sensors.AHT20Humidity import AHT20Humidity
 from sensors.GrowMoistureSensor import GrowMoistureSensor
 from settings import settings
-import credentials
+from credentials import *
 
 
 # AWS credentials imported from credentials.py local file
@@ -15,7 +15,16 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 
-class DataCollector:
+class Singleton(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] =super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+class DataCollector(metaclass=Singleton):
     sensors = {
         "Temperature": AHT20Temperature(),
         "Humidity": AHT20Humidity(),
@@ -60,6 +69,22 @@ class DataCollector:
         new_df = pd.DataFrame(columns=self.sensors.keys())
         new_df.index.name = "Timestamp"
         return new_df
+
+    def get_data(self, sensor):
+        table = "example"
+        output_location = ""
+        ac = boto3.client('athena')
+        query = f"""
+        SELECT Timestamp, {sensor} FROM {table} 
+        """
+        response = ac.start_query_execution(QueryString=query, QueryExecutionContex={'Database': ''}, ResultConfiguration={'OutputLocation': ''})
+        result = {}
+        while 'ResultSet' not in result.keys():
+            result = ac.get_query_results(response['QueryExecutionId'])
+        return result['ResultSet']
+    @staticmethod
+    def get_sensors():
+        return list(DataCollector.sensors.keys())
 
 
 if __name__ == '__main__':

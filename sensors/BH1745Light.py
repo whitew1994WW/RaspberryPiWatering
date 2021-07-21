@@ -1,4 +1,4 @@
-#!/home/pi/Documents/auto_water/venv python
+#!/home/pi/Documents/main_dir/venv python
 from sensors.AbstractSensor import AbstractSensor
 import bh1745
 import logging

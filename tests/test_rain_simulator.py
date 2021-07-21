@@ -3,7 +3,7 @@ import unittest
 from RainSimulator import RainSimulator
 import logging
 import RPi.GPIO as GPIO
-from DataCollector import DataCollector
+from main_dir.DataCollector import DataCollector
 logging.getLogger().setLevel(logging.DEBUG)
 
 

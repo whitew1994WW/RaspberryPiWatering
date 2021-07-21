@@ -1,5 +1,5 @@
 from sensors.AbstractSensor import AbstractSensor
-import python_sensor_aht20.AHT20 as AHT20
+from sensor_aht20.AHT20 import AHT20
 
 
 class AHT20Humidity(AbstractSensor):
@@ -9,7 +9,7 @@ class AHT20Humidity(AbstractSensor):
 
     def __init__(self):
         # Initialize an AHT20
-        self.aht20 = AHT20.AHT20()
+        self.aht20 = AHT20()
 
     def get_reading(self):
         humidity = self.aht20.get_humidity()

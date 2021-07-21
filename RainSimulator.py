@@ -15,7 +15,7 @@ class RainSimulator:
     pump_output_pin = 0
     rain_rate = 0  # in ml per minutes, how fast the pump will pump
     rain_amount = 0  # in ml, how much the pump will pump in one 'rain'
-    rain_time = 0 # in minutes, how long the pump will pump in one 'rain'
+    rain_time = 0  # in minutes, how long the pump will pump in one 'rain'
     minimum_days_between_rain = 7 # in Days
 
     calibration_settings = {

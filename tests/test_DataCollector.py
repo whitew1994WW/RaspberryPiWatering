@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from DataCollector import DataCollector
+from main_dir.DataCollector import DataCollector
 import boto3
 import random
 
