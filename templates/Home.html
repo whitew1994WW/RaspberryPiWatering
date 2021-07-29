@@ -22,7 +22,7 @@
     <section class="u-section-2" id="sec-7136">
       <div class="u-dropdown">
         <label for="sensors">Sensor:</label>
-        <select name="sensors" id="sensors">
+        <select name="sensors" id="sensors" onchange='updateGraph(this.value)'>
         </select>
       </div>
       <div class="u-container">
@@ -44,6 +44,7 @@
   Plotly.plot('chart',graphs,{});
 </script>
 
+
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 <script type="text/javascript">
 let dropdown = $('#sensors');
@@ -57,9 +58,19 @@ const url = 'http://192.168.0.19:5000/get_sensors';
 // Populate dropdown with list of provinces
 $.getJSON(url, function (data) {
   $.each(data['body'], function (sensor) {
-    dropdown.append($('<option></option>').attr('value', 'Sensor').text(data['body'][sensor]));
+    dropdown.append($('<option></option>').attr('value', data['body'][sensor]).text(data['body'][sensor]));
   })
 });
 </script>
 
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<script>
+  function updateGraph(sensor) {
+    const url = 'http://192.168.0.19:5000/get_data/' + sensor;
+    $.getJSON(url, function(graph_data) {
+          Plotly.newPlot('chart',graph_data,{});
+
+    })
+  }
+</script>
 </html>

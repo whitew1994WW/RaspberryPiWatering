@@ -10,4 +10,7 @@ settings = {
 
     # Script options
     'water_when_low': True,
-    'calibrate': True}
+    'calibrate': True,
+    'table_name': "example_bucket_whitew1994",
+    'database_name': "test",
+    'output_location': "s3://athena-output-auto-water/"}

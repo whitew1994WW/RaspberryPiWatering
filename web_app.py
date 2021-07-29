@@ -7,6 +7,7 @@ from multiprocessing import Process
 import plotly
 import time
 import plotly.express as px
+import logging
 from DataCollector import DataCollector
 
 flask_app = Flask(__name__)
@@ -14,21 +15,24 @@ flask_app = Flask(__name__)
 
 @flask_app.route('/')
 def index():
-    df = pd.DataFrame({
-      "Fruit": ["Apples", "Oranges", "Bananas", "Apples", "Oranges", "Bananas"],
-      "Amount": [4, 1, 2, 2, 4, 5],
-      "City": ["SF", "SF", "SF", "Montreal", "Montreal", "Montreal"]
-   })
-    fig = px.bar(df, x="Fruit", y="Amount", color="City",    barmode="group")
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    graphJSON = build_graph(pd.DataFrame({'Timestamp':[], 'Sensor':[]}))
     return render_template('Home.html', graphJSON=graphJSON)
 
 # GET - data from sensor X
 @flask_app.route('/get_data/<sensor>')
 def get_data(sensor):
+    sensor = sensor.replace("%20", " ")
+    # CHeck it is a valid request
+    logging.debug(f"API request STARTING for sensor {sensor}")
+    if sensor not in DataCollector.get_sensors():
+        raise NameError('Invaid sensor name')
     data_collector = DataCollector()
-    data = data_collector.get_data(sensor)
-    return build_response(200, data)
+    df = data_collector.get_data(sensor)
+    graphJson = build_graph(df)
+
+    logging.debug(f"API request SUCCESSFUL for sensor {sensor}")
+    logging.debug(f"GRAPH JSON looks like {graphJson}")
+    return graphJson
 
 
 # GET - list of active sensors
@@ -45,6 +49,12 @@ def get_sensors():
 def build_response(status, body):
     return jsonify(status=status, body=body)
 
+def build_graph(df):
+    fig = px.line(df, x='Timestamp', y='Sensor')
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+
 
 if __name__ == '__main__':
     flask_app.run(host='0.0.0.0')
+

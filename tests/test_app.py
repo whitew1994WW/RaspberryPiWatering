@@ -19,9 +19,8 @@ class TestApp(unittest.TestCase):
     def test_get_data(self):
         url = f'http://{self.host}:{self.port}/get_data/Temperature'
         response = requests.get(url)
-        response_dict = dict(response.text)
-        logging.debug(f'response is {response_dict}')
-        self.assertTrue(response_dict['status'] == 200)
+        logging.debug(f'response is {response}')
+        self.assertTrue(response.hasKey('data'))
 
     def test_get_sensors(self):
         url = f'http://{self.host}:{self.port}/get_sensors'
@@ -29,6 +28,7 @@ class TestApp(unittest.TestCase):
         response_dict = json.loads(response.text)
         logging.debug(f'response is {response_dict}')
         self.assertTrue(response_dict['status'] == 200)
+
 
     def tearDown(self) -> None:
         self.process.terminate()
