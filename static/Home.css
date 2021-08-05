@@ -6,3 +6,30 @@
 .chart {
   min-height: 1000px;
 }
+
+#collect-button {
+  font-size: medium;
+  align-content: center;
+}
+
+
+#collect-button {
+  color: rgb(255, 255, 255);
+  font-size: 25px;
+  line-height: 25px;
+  padding: 13px;
+  border-radius: 50px;
+  font-family: Georgia, serif;
+  font-weight: normal;
+  text-decoration: none;
+  font-style: normal;
+  font-variant: normal;
+  text-transform: none;
+  background-image: linear-gradient(to right, rgb(28, 110, 164) 0%, rgb(35, 136, 203) 50%, rgb(20, 78, 117) 100%);
+  border: 2px solid rgb(28, 110, 164);
+  display: inline-block;}
+
+#collect-button:hover {
+background: #1C6EA4; }
+#collect-button:active {
+background: #144E75; }

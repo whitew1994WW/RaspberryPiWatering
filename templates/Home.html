@@ -32,11 +32,14 @@
 
     <section class="u-section-3" id="sec-a257">
                 <div class="u-container">
-                  <a href="https://nicepage.com/joomla-page-builder" class="u-btn">Button</a>
+                  <a onclick="collectData()" class="u-btn" id="collect-button">Collect new reading and update graph</a>
                 </div>
     </section>
+  <div class="camera" id="camera">
+    <img  class="camera-bg" style="width: 100%; height:80%; background-attachment: fixed;" id="bg" class="center" src="{{ url_for('video_feed') }}">
+  </div>
   </body>
-"
+
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
   var graphs = {{graphJSON | safe}};
@@ -67,6 +70,16 @@ $.getJSON(url, function (data) {
 <script>
   function updateGraph(sensor) {
     const url = 'http://192.168.0.19:5000/get_data/' + sensor;
+    $.getJSON(url, function(graph_data) {
+          Plotly.newPlot('chart',graph_data,{});
+
+    })
+  }
+
+  function collectData() {
+    var e = document.getElementById("sensors");
+    var sensor = e.value;
+    const url = 'http://192.168.0.19:5000/collect_data/' + sensor;
     $.getJSON(url, function(graph_data) {
           Plotly.newPlot('chart',graph_data,{});
 

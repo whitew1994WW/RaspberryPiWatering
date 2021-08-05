@@ -11,6 +11,7 @@ from settings import settings
 from credentials import *
 
 
+logging.getLogger('boto').setLevel(logging.CRITICAL)
 # AWS credentials imported from credentials.py local file
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -35,7 +36,7 @@ class DataCollector(metaclass=Singleton):
         "Green Light": BH1745Light(mode='green'),
         "Blue Light": BH1745Light(mode='blue'),
     }
-    additional_columns = ['rain_rate', 'shower_volume']
+    additional_columns = ['Rain Rate', 'Shower Volume']
     save_data = True
 
     def __init__(self, save_data=True, bucket='s3://example-bucket-whitew1994'):
@@ -52,16 +53,24 @@ class DataCollector(metaclass=Singleton):
     def collect_data(self, rain_rate, shower_volume):
         current_datetime = pd.Timestamp.now()
         logging.debug("Collecting Data at {}".format(current_datetime))
-        self.df.loc[current_datetime, 'rain_rate'] = rain_rate
-        self.df.loc[current_datetime, 'shower_volume'] = shower_volume
+        new_row = {'Rain Rate': rain_rate, 'Shower Volume':shower_volume, 'Timestamp': current_datetime}
         for sensor_name in self.sensors.keys():
-            reading = self.sensors[sensor_name].get_reading()
-            self.df.loc[current_datetime, sensor_name] = self.sensors[sensor_name].get_reading()
+            new_row[sensor_name] = self.sensors[sensor_name].get_reading()
+        self.df = self.df.append(new_row, ignore_index=True)
+
 
     def save_current_data(self, previous_day=(pd.Timestamp.now() - pd.Timedelta(1, unit='day'))):
         logging.debug("Saving data for day {}".format(previous_day))
         bucket_file_name = self.bucket + '/year=' + str(previous_day.year) + '/month=' + str(previous_day.month) + '/' + \
                            str(previous_day.day) + '.csv'
+
+        # Check to see if there is already a daily file - if there is update it
+        try:
+            existing_df = pd.read_csv(bucket_file_name)
+            self.df = pd.concat([self.df, existing_df])
+        except FileNotFoundError:
+            pass
+
         self.df.to_csv(bucket_file_name,
                   index=False,
                   storage_options={
@@ -72,8 +81,7 @@ class DataCollector(metaclass=Singleton):
         self.df = self.create_empty_dataframe()
 
     def create_empty_dataframe(self):
-        new_df = pd.DataFrame(columns=list(self.sensors.keys()) + self.additional_columns)
-        new_df.index.name = "Timestamp"
+        new_df = pd.DataFrame(columns=list(self.sensors.keys()) + self.additional_columns + ['Timestamp'])
         return new_df
 
     def get_data(self, sensor):

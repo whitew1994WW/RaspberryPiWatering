@@ -30,15 +30,16 @@ class TestCollectData(unittest.TestCase):
         rain_rate = random.randint(1, 100)
         self.data_collector.collect_data(rain_rate, 100)
         last_added = self.data_collector.df.iloc[-1:]
-        print(last_added['rain_rate'].iloc[0])
-        self.assertEqual(last_added['rain_rate'].iloc[0], rain_rate)
-        self.assertIn('shower_volume', list(last_added.columns))
-        self.assertIsNotNone(last_added['shower_volume'].iloc[0])
+        self.assertGreater(len(self.data_collector.df.index), 0)
+        print(last_added)
+        self.assertEqual(last_added['Rain Rate'].iloc[0], rain_rate)
+        self.assertIn('Shower Volume', list(last_added.columns))
+        self.assertIsNotNone(last_added['Shower Volume'].iloc[0])
 
     def test_save_current_data(self):
         self.empty_bucket()
         sensors_rand_walk = {field: 50 for field in self.data_collector.get_sensors()}
-        for day in range(5):
+        for day in range(-5, 0):
             test_data = {field: [] for field in self.data_collector.get_sensors()}
             test_data['Timestamp'] = []
             for minutes in range((24*60) // 10):
